@@ -25,7 +25,8 @@ namespace DataAccess
         {
             cancellation.ThrowIfCancellationRequested();
 
-            using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
+            using (StreamReader reader = new StreamReader(stream, Encoding.UTF8, 
+                detectEncodingFromByteOrderMarks: false, bufferSize: 1024, leaveOpen: true))
             {
                 var line = await reader.ReadLineAsync();
                 return ParseLine(line);
@@ -68,7 +69,8 @@ namespace DataAccess
         {
             cancellation.ThrowIfCancellationRequested();
 
-            using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8))
+            using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8, 
+                bufferSize: 1024, leaveOpen: true))
             {
                 string stringLine = PrepareLine(line);
                 await writer.WriteLineAsync(stringLine);

@@ -34,11 +34,29 @@ namespace Tests
             }
         }
 
-        private async Task WriteToStream(Stream stream, string str)
+        [Fact]
+        public async Task WriteDataIntoStream_Success()
         {
-            using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8))
+            var cts = new CancellationTokenSource();
+            DataLine line = new DataLine(123, "Apple");
+
+            using (Stream stream = new MemoryStream())
             {
-                await writer.WriteLineAsync(str);
+                var textProvider = ServiceProvider.GetRequiredService<TextFileDataProvider>();
+
+                await textProvider.WriteLine(line, stream, cts.Token);
+
+                stream.Seek(0, SeekOrigin.Begin);
+
+                using (TextReader reader = new StreamReader(stream, Encoding.UTF8))
+                {
+                    string stringLine = await reader.ReadLineAsync();
+
+                    Assert.NotNull(stringLine);
+                    Assert.True(
+                        StringComparer.InvariantCultureIgnoreCase.Equals(
+                            "123. Apple", stringLine));
+                }
             }
         }
     }
