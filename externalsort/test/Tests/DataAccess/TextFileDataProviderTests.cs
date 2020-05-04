@@ -62,6 +62,29 @@ namespace Tests
         }
 
         [Fact]
+        public async Task ReadDataFromStream_AsSeq_Success()
+        {
+            var cts = new CancellationTokenSource();
+            string source = "123. Apple\n222. Banana";
+
+            using (Stream memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(source)))
+            {
+                var textProvider = ServiceProvider.GetRequiredService<TextFileDataProvider>();
+
+                DataLine dataLine = await textProvider.GetNextLine(memoryStream, cts.Token);
+
+                Assert.Equal(123, dataLine.Number);
+                Assert.True(
+                    StringComparer.InvariantCultureIgnoreCase.Equals("Apple", dataLine.StringData));
+
+                dataLine = await textProvider.GetNextLine(memoryStream, cts.Token);
+                Assert.Equal(222, dataLine.Number);
+                Assert.True(
+                    StringComparer.InvariantCultureIgnoreCase.Equals("Banana", dataLine.StringData));
+            }
+        }
+
+        [Fact]
         public async Task WriteDataIntoStream_Success()
         {
             var cts = new CancellationTokenSource();
