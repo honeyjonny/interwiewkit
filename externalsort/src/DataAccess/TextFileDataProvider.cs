@@ -23,13 +23,25 @@ namespace DataAccess
             _logger = logger;
         }
 
+        ///<remarks>
+        /// Current implementation of this method could not work with stream implementation
+        /// that doesn't support change position of cursor in the stream.
+        /// Source of this problem became because StreamReader reads far more from stream than
+        /// it needs for one line and next read reads from empty stream.
+        /// </remarks>
         public async Task<DataLine> GetNextLine(Stream stream, CancellationToken cancellation)
         {
             cancellation.ThrowIfCancellationRequested();
 
             using (StreamReader reader = CreateReader(stream))
             {
+                long lastPosition = stream.Position;
+
                 var line = await reader.ReadLineAsync();
+
+                long newPosition = lastPosition + GetLenInUtf8PlusCr(line);
+                stream.Position = newPosition;
+
                 return ParseLine(line);
             }
         }
@@ -93,38 +105,40 @@ namespace DataAccess
             }
         }
 
-        public async Task WriteAll(DataLine[] lines, Stream stream, CancellationToken cancellation)
+        public Task WriteAll(DataLine[] lines, Stream stream, CancellationToken cancellation)
         {
-            using (StreamWriter writer = CreateWriter(stream))
+            using (BinaryWriter writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true))
             {
-                char[] array = null;
+                byte[] array = null;
                 bool taken = false;
                 try
                 {
                     var arrayLength = lines
                         .Select(PrepareLine)
-                        .Select(x => Encoding.UTF8.GetBytes(x).Length + 1)
+                        .Select(GetLenInUtf8PlusCr)
                         .Sum();
 
-                    array = ArrayPool<char>.Shared.Rent(arrayLength);
+                    array = ArrayPool<byte>.Shared.Rent(arrayLength);
                     taken = true;
 
                     CopyTo(array, lines);
 
-                    await writer.WriteAsync(array, 0, arrayLength - 1);
-                    await writer.FlushAsync();
+                    writer.Write(array, 0, arrayLength);
+                    writer.Flush();
                 }
                 finally
                 {
                     if (taken)
                     {
-                        ArrayPool<char>.Shared.Return(array);
+                        ArrayPool<byte>.Shared.Return(array);
                     }
                 }
             }
+
+            return Task.CompletedTask;
         }
 
-        private void CopyTo(char[] array, DataLine[] lines)
+        private void CopyTo(byte[] array, DataLine[] lines)
         {
             int lastLength = 0;
             for (int i = 0; i < lines.Length; i++)
@@ -139,6 +153,8 @@ namespace DataAccess
 
         private StreamWriter CreateWriter(Stream stream) =>
             new StreamWriter(stream, Encoding.UTF8, bufferSize: 1024, leaveOpen: true);
+
+        private static int GetLenInUtf8PlusCr(string val) => Encoding.UTF8.GetBytes(val).Length + 1;
 
         private string PrepareLine(DataLine data) => $"{data.Number:D}. {data.StringData}";
     }
