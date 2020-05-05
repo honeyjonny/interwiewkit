@@ -49,7 +49,7 @@ namespace DataAccess
             {
                 if (disposing)
                 {
-
+                    _dataStream.Dispose();
                 }
             }
 
