@@ -39,7 +39,7 @@ namespace DataAccess
 
                 var line = await reader.ReadLineAsync();
 
-                long newPosition = lastPosition + GetLenInUtf8PlusCr(line);
+                long newPosition = lastPosition + GetLenInUtf8PlusLf(line);
                 stream.Position = newPosition;
 
                 return ParseLine(line);
@@ -115,7 +115,7 @@ namespace DataAccess
                 {
                     var arrayLength = lines
                         .Select(PrepareLine)
-                        .Select(GetLenInUtf8PlusCr)
+                        .Select(GetLenInUtf8PlusLf)
                         .Sum();
 
                     array = ArrayPool<byte>.Shared.Rent(arrayLength);
@@ -154,7 +154,7 @@ namespace DataAccess
         private StreamWriter CreateWriter(Stream stream) =>
             new StreamWriter(stream, Encoding.UTF8, bufferSize: 1024, leaveOpen: true);
 
-        private static int GetLenInUtf8PlusCr(string val) => Encoding.UTF8.GetBytes(val).Length + 1;
+        private static int GetLenInUtf8PlusLf(string val) => Encoding.UTF8.GetBytes(val).Length + 1;
 
         private string PrepareLine(DataLine data) => $"{data.Number:D}. {data.StringData}";
     }
