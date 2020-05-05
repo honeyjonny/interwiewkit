@@ -10,9 +10,9 @@ namespace Abstractions
         /// <summary>
         /// Method creates single data reader for particular file
         /// </summary>
-        /// <param name="fileName">File name</param>
+        /// <param name="filePath">File path</param>
         /// <returns>Reader for read file</returns>
-        IReader CreateSingleReader(string fileName);
+        IReader CreateSingleReader(string filePath);
 
         /// <summary>
         /// Method creates collection of readers with partition underlying file per reader
@@ -20,6 +20,6 @@ namespace Abstractions
         /// <param name="fileName">File name</param>
         /// <param name="numLines">Number of lines one reader can read</param>
         /// <returns>Collection of readers</returns>
-        IReadOnlyCollection<IReader> CreateReaderPerLines(string fileName, int numLines);
+        IEnumerable<IReader> CreateReaderPerLines(string fileName, int numLines);
     }
 }
